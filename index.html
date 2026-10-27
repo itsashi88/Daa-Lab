@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bus Fare Optimizer</title>
+</head>
+<body>
+
+<h2>Bus Fare Optimizer</h2>
+<p>Find the cheapest tickets using Dynamic Programming</p>
+
+<hr>
+
+Single ticket price: <input type="number" id="single" value="20"><br><br>
+Day pass price: <input type="number" id="day" value="70"><br><br>
+Weekly pass price: <input type="number" id="week" value="250"><br><br>
+Trips per day (comma separated): <input type="text" id="trips" value="2,3,0,4,5,1,0,2,6,4,3,0,5,2"><br><br>
+
+<button onclick="run()">Calculate</button>
+
+<hr>
+
+<p id="error" style="color:red"></p>
+<div id="output"></div>
+
+<script>
+function run() {
+  var single = Number(document.getElementById("single").value);
+  var dayPass = Number(document.getElementById("day").value);
+  var weekPass = Number(document.getElementById("week").value);
+  var parts = document.getElementById("trips").value.split(",");
+  var out = document.getElementById("output");
+  var err = document.getElementById("error");
+  out.innerHTML = "";
+  err.innerHTML = "";
+
+  var trips = [];
+  for (var k = 0; k < parts.length; k++) {
+    var v = Number(parts[k]);
+    if (parts[k].trim() === "" || isNaN(v) || v < 0) {
+      err.innerHTML = "Please enter valid numbers.";
+      return;
+    }
+    trips.push(v);
+  }
+  if (single <= 0 || dayPass <= 0 || weekPass <= 0) {
+    err.innerHTML = "Prices must be greater than 0.";
+    return;
+  }
+
+  var n = trips.length;
+  var dp = [0];
+  var choice = [""];
+  var from = [0];
+
+  // dp[i] = minimum cost for first i days
+  for (var i = 1; i <= n; i++) {
+    var t = trips[i - 1];
+    var dayCost = t * single;
+    var name = "Single tickets";
+    if (t === 0) {
+      name = "No travel";
+    } else if (dayPass < dayCost) {
+      dayCost = dayPass;
+      name = "Day pass";
+    }
+    var best = dp[i - 1] + dayCost;
+    var prev = i - 1;
+
+    var start = i - 7;
+    if (start < 0) { start = 0; }
+    var weekCost = dp[start] + weekPass;
+    if (weekCost < best) {
+      best = weekCost;
+      name = "Weekly pass";
+      prev = start;
+    }
+    dp[i] = best;
+    choice[i] = name;
+    from[i] = prev;
+  }
+
+  // simple costs for comparison
+  var allSingle = 0;
+  for (var j = 0; j < n; j++) { allSingle = allSingle + trips[j] * single; }
+
+  var html = "<p>Minimum cost: Rs " + dp[n] + "</p>";
+  html += "<p>Cost if only single tickets: Rs " + allSingle + "</p>";
+
+  // go back to find what to buy
+  html += "<p>What to buy:</p><ul>";
+  var p = n;
+  var list = "";
+  while (p > 0) {
+    var s = from[p] + 1;
+    if (choice[p] !== "No travel") {
+      list = "<li>Day " + s + " to " + p + ": " + choice[p] + "</li>" + list;
+    }
+    p = from[p];
+  }
+  html += list + "</ul>";
+
+  html += "<p>DP Table:</p>";
+  html += "<table border='1' cellpadding='4'>";
+  html += "<tr><th>Day</th><th>Trips</th><th>dp[i]</th><th>Choice</th></tr>";
+  html += "<tr><td>0</td><td>-</td><td>0</td><td>-</td></tr>";
+  for (var d = 1; d <= n; d++) {
+    html += "<tr><td>" + d + "</td><td>" + trips[d - 1] + "</td><td>" + dp[d] + "</td><td>" + choice[d] + "</td></tr>";
+  }
+  html += "</table>";
+
+  out.innerHTML = html;
+}
+</script>
+
+</body>
+</html>
